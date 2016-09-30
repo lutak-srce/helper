@@ -1,0 +1,2 @@
+# Delete old indices from 25 days ago, if they exist
+15 3  * * *     root /usr/local/bin/rmindices -d 25 --format "\%Y.\%m.\%d" > /dev/null
