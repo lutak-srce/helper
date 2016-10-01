@@ -1,0 +1,14 @@
+/var/log/httpd/*log {
+    daily
+    dateext
+    notifempty
+    missingok
+    size=+4096k
+    rotate 99
+    maxage 365
+    compress
+    sharedscripts
+    postrotate
+        /sbin/service httpd graceful > /dev/null 2>/dev/null || true
+    endscript
+}

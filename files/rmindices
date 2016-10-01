@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# rmindices
+#
+# This script deletes ElasticSearch indices.
+# Copyright(c) Jakov Sosic <jsosic@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see http://www.gnu.org/licenses/.
+
+# many days of logs do we want to keep? default 30
+DAYSAGO=30
+
+# format of indice timestamp, default: YYYY.MM.DD
+FORMAT="%Y.%m.%d"
+
+# don't delete older indices but exact match
+OLDER=""
+
+HOST=localhost
+PORT=9200
+
+# print help
+help_usage()
+{
+cat << EOF
+usage: $0 options
+
+This script deletes indices in ElasticSearch, matched by date.
+
+OPTIONS:
+   -h,--help          Show this message
+   -H,--host          Hostname of ElasticSearch instance to connect to. Default: localhost
+   -P,--port          Port of the ElasticSearch instance to connect to. Default: 9200
+   -d,--daysago       Match indices days ago, default: 30
+   -f,--format        Format of indice timestamp. Default: "%Y.%m.%d"
+   -o,--older         Delete all indices older then match.
+   -n,--noop          No operation run (only print what would be deleted).
+   -v,--verbose       Verbose output
+EOF
+}
+
+
+# Execute getopt
+ARGS=$(getopt -o H:P:d:f:onvh -l "host:,port:,daysago:,format:,older,noop,verbose,help" -n "$0" -- "$@");
+
+eval set -- "$ARGS";
+
+while true; do
+  case "$1" in
+    -h|--help)
+      shift;
+      help_usage;
+      ;;
+    -H|--host)
+      shift;
+      if [ -n "$1" ]; then
+        HOST=$1;
+        shift;
+      fi
+      ;;
+    -P|--port)
+      shift;
+      if [ -n "$1" ]; then
+        PORT=$1;
+        shift;
+      fi
+      ;;
+    -d|--daysago)
+      shift;
+      if [ -n "$1" ]; then
+        DAYSAGO=$1;
+        shift;
+      fi
+      ;;
+    -f|--format)
+      shift;
+      if [ -n "$1" ]; then
+        FORMAT=$1;
+        shift;
+      fi
+      ;;
+    -o|--older)
+      shift;
+      OLDER=true;
+      ;;
+    -n|--noop)
+      shift;
+      NOOP=true;
+      ;;
+    -v|--verbose)
+      shift;
+      VERBOSE=true;
+      ;;
+    --)
+      shift;
+      break;
+      ;;
+  esac
+done
+
+
+# calculate the week number
+TIMESTAMP=`date --date="$DAYSAGO days ago" +"$FORMAT"`
+
+# find indices that we want to operate on
+if [ -z $OLDER ]; then
+  # list all indices that match our date pattern
+  INDICES=`/usr/bin/curl -s http://${HOST}:${PORT}/_aliases | /bin/sed -e 's/:{"aliases":{}}/\n/g' -e 's/[{,"}]//g' | /bin/grep $TIMESTAMP`
+else
+  # list all indices older then our date pattern
+  # MATCH=`/usr/bin/curl -s http://${HOST}:${PORT}/_aliases | /bin/sed -e 's/:{"aliases":{}}/\n/g' -e 's/[{,"}]//g' | /bin/sort -n `
+  echo "not implemented"
+fi
+
+# delete or print found indice(s)
+for single in $INDICES; do
+  echo -n "Deleting indice ${single} ... "
+  if [ -z "$NOOP" ]; then
+    /usr/bin/curl -s -XDELETE "http://${HOST}:${PORT}/${single}" | /bin/grep -q '{"acknowledged":true}'
+    [ $? -eq 0 ] && echo "done." || echo "failed."
+  else
+    echo "noop."
+  fi
+done
+
+# finish
+exit 0

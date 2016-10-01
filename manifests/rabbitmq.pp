@@ -3,6 +3,8 @@
 #
 # This class wraps create_resources around hiera hashes for RabbitMQ stuff
 class helper::rabbitmq {
+
+  include ::yum::repo::erlang
   include ::rabbitmq
 
   # vhosts
