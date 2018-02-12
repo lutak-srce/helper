@@ -16,10 +16,10 @@ class helper::apache {
 
   # Create virtual hosts
   $apache_vhosts = hiera_hash('apache::vhosts', {})
-  create_resources(::Apache::Vhost, $apache_vhosts)
+  create_resources(::apache::vhost, $apache_vhosts)
 
   # Create simple virtual hosts
   $apache_vhosts_simple = hiera_hash('apache::vhosts_simple', {})
-  create_resources(::Apache::Vhostsimple, $apache_vhosts_simple)
+  create_resources(::apache::vhostsimple, $apache_vhosts_simple)
 
 }
