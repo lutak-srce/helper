@@ -6,13 +6,13 @@ class helper::logstash {
 
   case $::operatingsystem {
     'RedHat', 'CentOS', 'Fedora', 'Scientific', 'Amazon', 'OracleLinux': {
-      include ::java::openjdk8
-      include ::yum::repo::logstash
+      include java::openjdk8
+      include yum::repo::elastic
     }
     default: { }
   }
 
-  include ::logstash
+  include logstash
 
   # load configs from hiera
   $logstash_configs = hiera_hash('logstash::configfiles', {})
